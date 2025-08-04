@@ -49,6 +49,14 @@ This project implements a property listing application with comprehensive cachin
 - Two-level caching architecture (view + queryset)
 - 46x performance improvement on queryset operations
 
+#### ✅ Task 3: Cache Invalidation Using Signals
+
+- Automatic cache invalidation on model changes
+- Django signals (post_save, post_delete) for real-time updates
+- Two-level cache clearing (view + queryset cache)
+- Redis key pattern matching for efficient cache management
+- Maintains data consistency across all cache layers
+
 ### Upcoming Features
 
 - Property detail view caching
@@ -267,6 +275,80 @@ Queryset Performance:        46x faster on cache hits
 - `get_all_properties()` - Main caching function
 - `invalidate_properties_cache()` - Cache invalidation
 - `get_cache_info()` - Cache status and TTL information
+
+### Task 3: Cache Invalidation Using Signals
+
+**Objective**: Implement automatic cache invalidation using Django signals to maintain data consistency.
+
+**Implementation Details**:
+
+- ✅ Created `properties/signals.py` with Django signal handlers
+- ✅ Automatic cache invalidation on Property model changes
+- ✅ Supports both `post_save` and `post_delete` signals
+- ✅ Two-level cache clearing (view + queryset cache)
+- ✅ Redis key pattern matching for efficient cache management
+
+**Key Files**:
+
+- `properties/signals.py` - Signal handlers for cache invalidation
+- `properties/apps.py` - App configuration with signal registration
+- `properties/__init__.py` - Default app config specification
+
+**Signal Implementation**:
+
+```python
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.cache import cache
+from .models import Property
+
+@receiver(post_save, sender=Property)
+def invalidate_cache_on_property_save(sender, instance, **kwargs):
+    # Clear both view and queryset cache levels
+    cache.delete('all_properties')  # Queryset cache
+    cache.delete_many(cache.keys('*property_list*'))  # View cache patterns
+
+@receiver(post_delete, sender=Property)
+def invalidate_cache_on_property_delete(sender, instance, **kwargs):
+    # Clear both view and queryset cache levels
+    cache.delete('all_properties')  # Queryset cache
+    cache.delete_many(cache.keys('*property_list*'))  # View cache patterns
+```
+
+**Automatic Cache Management**:
+
+```
+Property Created/Updated/Deleted
+    ↓
+Django Signal Triggered
+    ↓
+Cache Invalidation Function Called
+    ↓
+Both Cache Levels Cleared:
+- Queryset Cache (all_properties)
+- View Cache (property_list patterns)
+    ↓
+Next Request Rebuilds Fresh Cache
+```
+
+**Benefits**:
+
+- **Real-time Consistency**: Cache automatically updates when data changes
+- **Zero Manual Intervention**: No need to manually clear cache
+- **Two-Level Coverage**: Clears both view and queryset cache layers
+- **Performance Maintained**: Fresh cache rebuilt on next request
+- **Data Integrity**: Prevents stale data from being served
+
+**Testing Results**:
+
+```
+✅ Property Creation: Cache automatically invalidated
+✅ Property Update: Cache automatically invalidated
+✅ Property Deletion: Cache automatically invalidated
+✅ View Cache Cleared: Fresh data served immediately
+✅ Queryset Cache Cleared: Database queries refreshed
+✅ End-to-End Validation: Complete cache lifecycle tested
+```
 
 ## 📚 API Documentation
 
