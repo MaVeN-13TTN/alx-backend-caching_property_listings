@@ -103,3 +103,129 @@ def get_cache_info():
         "cached_count": len(cached_data) if cached_data else 0,
         "ttl_remaining": ttl_remaining,
     }
+
+
+def get_redis_cache_metrics():
+    """
+    Retrieve and analyze Redis cache hit/miss metrics.
+
+    This function connects to Redis via django_redis and retrieves
+    keyspace statistics to calculate cache performance metrics.
+
+    Returns:
+        dict: Cache metrics including:
+            - keyspace_hits: Number of successful lookups
+            - keyspace_misses: Number of failed lookups
+            - hit_ratio: Cache hit ratio as percentage
+            - total_operations: Total cache operations
+            - miss_ratio: Cache miss ratio as percentage
+
+    Logs:
+        Outputs cache metrics to console for analysis
+
+    Example:
+        {
+            'keyspace_hits': 1250,
+            'keyspace_misses': 150,
+            'hit_ratio': 89.29,
+            'miss_ratio': 10.71,
+            'total_operations': 1400
+        }
+    """
+    import logging
+
+    # Set up logging for metrics
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Import django_redis to get direct Redis connection
+        from django_redis import get_redis_connection
+
+        # Get Redis connection using the default cache configuration
+        redis_conn = get_redis_connection("default")
+
+        # Get Redis INFO statistics
+        info = redis_conn.info()
+
+        # Extract keyspace statistics
+        keyspace_hits = info.get("keyspace_hits", 0)
+        keyspace_misses = info.get("keyspace_misses", 0)
+
+        # Calculate total operations
+        total_operations = keyspace_hits + keyspace_misses
+
+        # Calculate hit and miss ratios
+        if total_operations > 0:
+            hit_ratio = (keyspace_hits / total_operations) * 100
+            miss_ratio = (keyspace_misses / total_operations) * 100
+        else:
+            hit_ratio = 0.0
+            miss_ratio = 0.0
+
+        # Prepare metrics dictionary
+        metrics = {
+            "keyspace_hits": keyspace_hits,
+            "keyspace_misses": keyspace_misses,
+            "hit_ratio": round(hit_ratio, 2),
+            "miss_ratio": round(miss_ratio, 2),
+            "total_operations": total_operations,
+        }
+
+        # Log metrics for analysis
+        logger.info("Redis Cache Metrics Analysis:")
+        logger.info(f"  Keyspace Hits: {keyspace_hits:,}")
+        logger.info(f"  Keyspace Misses: {keyspace_misses:,}")
+        logger.info(f"  Total Operations: {total_operations:,}")
+        logger.info(f"  Hit Ratio: {hit_ratio:.2f}%")
+        logger.info(f"  Miss Ratio: {miss_ratio:.2f}%")
+
+        # Also print to console for immediate visibility
+        print("\n" + "=" * 50)
+        print("📊 REDIS CACHE METRICS ANALYSIS")
+        print("=" * 50)
+        print(f"🎯 Keyspace Hits: {keyspace_hits:,}")
+        print(f"❌ Keyspace Misses: {keyspace_misses:,}")
+        print(f"📈 Total Operations: {total_operations:,}")
+        print(f"✅ Hit Ratio: {hit_ratio:.2f}%")
+        print(f"⚠️  Miss Ratio: {miss_ratio:.2f}%")
+
+        # Performance assessment
+        if hit_ratio >= 90:
+            performance = "🟢 EXCELLENT"
+        elif hit_ratio >= 80:
+            performance = "🟡 GOOD"
+        elif hit_ratio >= 70:
+            performance = "🟠 FAIR"
+        else:
+            performance = "🔴 POOR"
+
+        print(f"🎭 Cache Performance: {performance}")
+        print("=" * 50)
+
+        return metrics
+
+    except ImportError as e:
+        error_msg = f"django_redis not available: {e}"
+        logger.error(error_msg)
+        print(f"❌ Error: {error_msg}")
+        return {
+            "error": error_msg,
+            "keyspace_hits": 0,
+            "keyspace_misses": 0,
+            "hit_ratio": 0.0,
+            "miss_ratio": 0.0,
+            "total_operations": 0,
+        }
+
+    except Exception as e:
+        error_msg = f"Failed to retrieve Redis metrics: {e}"
+        logger.error(error_msg)
+        print(f"❌ Error: {error_msg}")
+        return {
+            "error": error_msg,
+            "keyspace_hits": 0,
+            "keyspace_misses": 0,
+            "hit_ratio": 0.0,
+            "miss_ratio": 0.0,
+            "total_operations": 0,
+        }

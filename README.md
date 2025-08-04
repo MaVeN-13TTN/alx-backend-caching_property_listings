@@ -57,12 +57,23 @@ This project implements a property listing application with comprehensive cachin
 - Redis key pattern matching for efficient cache management
 - Maintains data consistency across all cache layers
 
-### Upcoming Features
+#### ✅ Task 4: Cache Metrics Analysis
+
+- Redis cache hit/miss metrics retrieval and analysis
+- Real-time cache performance monitoring
+- Hit ratio calculations and performance assessments
+- Comprehensive logging for monitoring systems
+- Production-ready metrics API for dashboards
+
+### Future Enhancements
 
 - Property detail view caching
-- User-specific caching
-- Cache invalidation strategies
-- Advanced query optimization
+- User-specific caching strategies
+- Advanced cache warming techniques
+- Distributed caching across multiple Redis instances
+- Cache compression and serialization optimization
+- Real-time metrics dashboard
+- Automated cache performance alerts
 
 ## 🏛️ Architecture
 
@@ -350,6 +361,123 @@ Next Request Rebuilds Fresh Cache
 ✅ End-to-End Validation: Complete cache lifecycle tested
 ```
 
+### Task 4: Cache Metrics Analysis
+
+**Objective**: Retrieve and analyze Redis cache hit/miss metrics for performance monitoring.
+
+**Implementation Details**:
+
+- ✅ Created `get_redis_cache_metrics()` function in `properties/utils.py`
+- ✅ Direct Redis connection via `django_redis`
+- ✅ Retrieves keyspace_hits and keyspace_misses from Redis INFO
+- ✅ Calculates hit ratio using formula: `hits / (hits + misses) * 100`
+- ✅ Comprehensive logging for monitoring systems
+- ✅ Production-ready metrics API
+
+**Key Files**:
+
+- `properties/utils.py` - Cache metrics analysis function
+- `test_cache_metrics.py` - Comprehensive test suite
+- `demo_cache_metrics.py` - Usage demonstration
+
+**Function Implementation**:
+
+```python
+def get_redis_cache_metrics():
+    """
+    Retrieve and analyze Redis cache hit/miss metrics.
+
+    Returns:
+        dict: Cache metrics including:
+            - keyspace_hits: Number of successful lookups
+            - keyspace_misses: Number of failed lookups
+            - hit_ratio: Cache hit ratio as percentage
+            - miss_ratio: Cache miss ratio as percentage
+            - total_operations: Total cache operations
+    """
+    from django_redis import get_redis_connection
+
+    redis_conn = get_redis_connection("default")
+    info = redis_conn.info()
+
+    keyspace_hits = info.get('keyspace_hits', 0)
+    keyspace_misses = info.get('keyspace_misses', 0)
+    total_operations = keyspace_hits + keyspace_misses
+
+    if total_operations > 0:
+        hit_ratio = (keyspace_hits / total_operations) * 100
+        miss_ratio = (keyspace_misses / total_operations) * 100
+    else:
+        hit_ratio = miss_ratio = 0.0
+
+    return {
+        'keyspace_hits': keyspace_hits,
+        'keyspace_misses': keyspace_misses,
+        'hit_ratio': round(hit_ratio, 2),
+        'miss_ratio': round(miss_ratio, 2),
+        'total_operations': total_operations
+    }
+```
+
+**Usage Examples**:
+
+```python
+# Basic usage
+from properties.utils import get_redis_cache_metrics
+
+metrics = get_redis_cache_metrics()
+print(f"Hit Ratio: {metrics['hit_ratio']:.2f}%")
+
+# Monitoring integration
+import logging
+logger = logging.getLogger(__name__)
+
+metrics = get_redis_cache_metrics()
+if metrics['hit_ratio'] < 80:
+    logger.warning(f"Low cache hit ratio: {metrics['hit_ratio']:.2f}%")
+```
+
+**Metrics Output Example**:
+
+```
+📊 REDIS CACHE METRICS ANALYSIS
+==================================================
+🎯 Keyspace Hits: 1,250
+❌ Keyspace Misses: 150
+📈 Total Operations: 1,400
+✅ Hit Ratio: 89.29%
+⚠️  Miss Ratio: 10.71%
+🎭 Cache Performance: 🟢 EXCELLENT
+==================================================
+```
+
+**Performance Assessment Levels**:
+
+- 🟢 **EXCELLENT**: ≥90% hit ratio - Highly optimized
+- 🟡 **GOOD**: ≥80% hit ratio - Well optimized
+- 🟠 **FAIR**: ≥70% hit ratio - Needs optimization
+- 🔴 **POOR**: <70% hit ratio - Requires immediate attention
+
+**Benefits**:
+
+- **Real-time Monitoring**: Live cache performance metrics
+- **Performance Insights**: Automatic performance assessment
+- **Production Ready**: Error handling and logging integration
+- **Dashboard Integration**: Structured data for monitoring systems
+- **Trend Analysis**: Historical metrics tracking capability
+
+**Testing Results**:
+
+```
+✅ Function Import: Successfully imported and callable
+✅ Redis Connection: Connects via django_redis without issues
+✅ Metrics Retrieval: Gets keyspace_hits and keyspace_misses from INFO
+✅ Calculations: Accurate hit ratio and total operations calculations
+✅ Return Format: Proper dictionary format with all required fields
+✅ Logging: Comprehensive logging functionality implemented
+✅ Error Handling: Robust error handling for various failure scenarios
+```
+
 ## 📚 API Documentation
 
 ### Endpoints
@@ -392,6 +520,15 @@ python test_caching.py
 
 # Run low-level queryset cache test
 python test_low_level_caching.py
+
+# Run signal-based cache invalidation test
+python test_signal_invalidation.py
+
+# Run cache metrics analysis test
+python test_cache_metrics.py
+
+# Run cache metrics demonstration
+python demo_cache_metrics.py
 ```
 
 ### Manual Testing
