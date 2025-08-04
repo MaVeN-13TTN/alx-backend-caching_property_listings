@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.cache import cache_page
 from django.core import serializers
 from .models import Property
+from .utils import get_all_properties
 
 # Create your views here.
 
@@ -11,9 +12,16 @@ from .models import Property
 def property_list(request):
     """
     View to return all properties as JSON response.
-    Cached in Redis for 15 minutes.
+
+    This view now uses two-level caching:
+    1. View-level caching (@cache_page) - 15 minutes
+    2. Queryset-level caching (get_all_properties) - 1 hour
+
+    The queryset cache persists longer than the view cache,
+    providing better performance for database queries.
     """
-    properties = Property.objects.all()
+    # Use low-level cached queryset instead of direct database query
+    properties = get_all_properties()
 
     # Convert queryset to list of dictionaries for JSON response
     properties_data = []
