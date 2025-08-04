@@ -151,16 +151,14 @@ def get_redis_cache_metrics():
         keyspace_hits = info.get("keyspace_hits", 0)
         keyspace_misses = info.get("keyspace_misses", 0)
 
-        # Calculate total operations
-        total_operations = keyspace_hits + keyspace_misses
+        # Calculate total requests
+        total_requests = keyspace_hits + keyspace_misses
 
         # Calculate hit and miss ratios
-        if total_operations > 0:
-            hit_ratio = (keyspace_hits / total_operations) * 100
-            miss_ratio = (keyspace_misses / total_operations) * 100
-        else:
-            hit_ratio = 0.0
-            miss_ratio = 0.0
+        hit_ratio = (keyspace_hits / total_requests) * 100 if total_requests > 0 else 0
+        miss_ratio = (
+            (keyspace_misses / total_requests) * 100 if total_requests > 0 else 0
+        )
 
         # Prepare metrics dictionary
         metrics = {
@@ -168,14 +166,14 @@ def get_redis_cache_metrics():
             "keyspace_misses": keyspace_misses,
             "hit_ratio": round(hit_ratio, 2),
             "miss_ratio": round(miss_ratio, 2),
-            "total_operations": total_operations,
+            "total_operations": total_requests,
         }
 
         # Log metrics for analysis
         logger.info("Redis Cache Metrics Analysis:")
         logger.info(f"  Keyspace Hits: {keyspace_hits:,}")
         logger.info(f"  Keyspace Misses: {keyspace_misses:,}")
-        logger.info(f"  Total Operations: {total_operations:,}")
+        logger.info(f"  Total Operations: {total_requests:,}")
         logger.info(f"  Hit Ratio: {hit_ratio:.2f}%")
         logger.info(f"  Miss Ratio: {miss_ratio:.2f}%")
 
@@ -185,7 +183,7 @@ def get_redis_cache_metrics():
         print("=" * 50)
         print(f"🎯 Keyspace Hits: {keyspace_hits:,}")
         print(f"❌ Keyspace Misses: {keyspace_misses:,}")
-        print(f"📈 Total Operations: {total_operations:,}")
+        print(f"📈 Total Operations: {total_requests:,}")
         print(f"✅ Hit Ratio: {hit_ratio:.2f}%")
         print(f"⚠️  Miss Ratio: {miss_ratio:.2f}%")
 
