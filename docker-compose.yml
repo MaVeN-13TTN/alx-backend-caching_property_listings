@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: alx_postgres
+    environment:
+      POSTGRES_DB: alx_caching_db
+      POSTGRES_USER: alx_user
+      POSTGRES_PASSWORD: alx_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - alx_network
+
+  redis:
+    image: redis:latest
+    container_name: alx_redis
+    ports:
+      - "6380:6379"
+    networks:
+      - alx_network
+
+volumes:
+  postgres_data:
+
+networks:
+  alx_network:
+    driver: bridge
