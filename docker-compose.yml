@@ -18,11 +18,14 @@ services:
     container_name: alx_redis
     ports:
       - "6380:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - alx_network
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   alx_network:
